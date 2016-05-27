@@ -232,7 +232,9 @@ namespace Tml
 
         public void CalculateBlockHeight()
         {
+            Logger.Log(""+Id + " " +LayoutedHeight);
             Reflow();
+            Logger.Log(""+Id + " " + LayoutedHeight);
         }
 
         //==========================================================
