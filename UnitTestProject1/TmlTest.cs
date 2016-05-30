@@ -15,7 +15,7 @@ public class TmlTest
     [TestMethod]
     public void LoaderTest2()
     {
-        string src = @"<div width=""100"" hoge=""fuga""><p id='p1'>hoge</p><p id='p2'>fuga</p></div>";
+        string src = @"<div id='div' width='100' hoge='fuga'><p id='p1'>hoge</p><p id='p2'>fuga</p></div>";
         var element = Tml.Loader.Default.Parse(src);
         element.Width = 100;
         element.LayoutedWidth = 100;

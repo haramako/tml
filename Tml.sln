@@ -1,11 +1,13 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
+# Visual Studio 2012
 VisualStudioVersion = 14.0.25123.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tml", "Tml\Tml.csproj", "{1C2FD75D-482A-4DDD-9ABE-16EE5624D61B}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TmlTest", "UnitTestProject1\TmlTest.csproj", "{CF823640-6407-4BDC-81F0-487CB67D7D1B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TmlUnitTest", "TmlUnitTest\TmlUnitTest.csproj", "{0AEADA4F-4C3D-4F6D-8664-F9EA61826C4A}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -13,6 +15,10 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{0AEADA4F-4C3D-4F6D-8664-F9EA61826C4A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0AEADA4F-4C3D-4F6D-8664-F9EA61826C4A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0AEADA4F-4C3D-4F6D-8664-F9EA61826C4A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0AEADA4F-4C3D-4F6D-8664-F9EA61826C4A}.Release|Any CPU.Build.0 = Release|Any CPU
 		{1C2FD75D-482A-4DDD-9ABE-16EE5624D61B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{1C2FD75D-482A-4DDD-9ABE-16EE5624D61B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{1C2FD75D-482A-4DDD-9ABE-16EE5624D61B}.Release|Any CPU.ActiveCfg = Release|Any CPU
