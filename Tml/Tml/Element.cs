@@ -12,15 +12,34 @@ using System.Linq;
 namespace Tml
 {
 
+#if !UNITY
     public class Logger
     {
 		public static bool Enable = false;
+		public static bool StopOnException = true;
+
         public static void Log(object text)
         {
 			if( Enable ) Console.WriteLine(text.ToString());
         }
-    }
 
+		public static void LogWarning(object text){
+			if( Enable ) Console.WriteLine(text.ToString());
+		}
+
+		public static void LogError(object text){
+			if( Enable ) Console.WriteLine(text.ToString());
+		}
+
+		public static void LogException(Exception ex){
+			if (StopOnException) {
+				throw ex;
+			} else {
+				Console.WriteLine (ex.ToString ());
+			}
+		}
+    }
+#endif
 
     public partial class Document: BlockElement
     {
@@ -32,6 +51,7 @@ namespace Tml
         Absolute,
         Block,
         Inline,
+		InlineBlock,
 		Text,
     }
 
@@ -140,6 +160,26 @@ namespace Tml
         {
         }
 
+		public int ActualFontSize(){
+			if (Style.FontSize != Style.Inherit) {
+				return Style.FontSize;
+			} else if (Parent != null) {
+				return Parent.ActualFontSize () * Style.FontScale / 100;
+			} else {
+				return Style.DefaultFontSize;
+			}
+		}
+
+		public int ActualLineHeight(){
+			if (Style.LineHeight != Style.Inherit) {
+				return Style.LineHeight;
+			} else if (Parent != null) {
+				return Parent.ActualLineHeight();
+			} else {
+				return Style.Nothing;
+			}
+		}
+
         //==========================================================
         // デバッグ用出力
         //==========================================================
@@ -172,13 +212,18 @@ namespace Tml
 		public virtual void DumpToHtmlBuf(StringBuilder buf, int level)
 		{
 			buf.Append(' ', level * 2);
+			string bgStyle = null;
+			if (!string.IsNullOrEmpty(Style.BackgroundImage)) {
+				bgStyle = string.Format ("background-image: url({0}.png); background-size: 100% 100%;", Style.BackgroundImage);
+			}
 			buf.Append (string.Format (
-				"<div id='{0}' class='def' style='outline: solid black 1px; left:{1}px; top:{2}px; width:{3}px; height:{4}px;'><div class='inner'>\n",
+				"<div id='{0}' class='def' style='outline: solid gray 1px; left:{1}px; top:{2}px; width:{3}px; height:{4}px; {5}'><div class='inner'>\n",
 				Id,
 				LayoutedX,
 				LayoutedY,
 				LayoutedWidth,
-				LayoutedHeight
+				LayoutedHeight,
+				bgStyle
 			));
 			foreach (var e in Fragments)
 			{
@@ -218,19 +263,59 @@ namespace Tml
 		}
 	}
 
-    public partial class Div : BlockElement
-    {
-    }
+	public partial class InlineBlockElement : Element
+	{
+		public InlineBlockElement(): base(){
+			LayoutType = LayoutType.InlineBlock;
+		}
+	}
 
-    public partial class H1 : BlockElement
-    {
-    }
+	public partial class A : InlineElement
+	{
+		public string Href;
 
-    public partial class P : BlockElement
-    {
-    }
+		public override void ParseAttribute(string name, string value)
+		{
+			switch (name) {
+			case "href":
+				Href = value;
+				break;
+			default:
+				base.ParseAttribute (name, value);
+				break;
+			}
+		}
+	}
 
-	public partial class Span : InlineElement {
+	public partial class Img : InlineBlockElement {
+		public string Src;
+
+		public override void ParseAttribute(string name, string value) {
+			switch (name) {
+			case "src":
+				Src = value;
+				break;
+			default:
+				base.ParseAttribute (name, value);
+				break;
+			}
+		}
+
+		public override void DumpToHtmlBuf(StringBuilder buf, int level)
+		{
+			buf.Append(' ', level * 2);
+			buf.Append (string.Format (
+				"<img id='{0}' class='def' style='outline: solid gray 1px; left:{1}px; top:{2}px; width:{3}px; height:{4}px;' src='{5}'>\n",
+				Id,
+				LayoutedX,
+				LayoutedY,
+				LayoutedWidth,
+				LayoutedHeight,
+				Src
+			));
+			buf.Append(' ', level * 2);
+			buf.Append("</div>\n");
+		}
 	}
 
     public partial class Text : Element
@@ -242,34 +327,59 @@ namespace Tml
 			LayoutType = LayoutType.Text;
         }
 
-		public override void CalculateBlockHeight()
+		public override void DumpToBuf(StringBuilder buf, int level)
 		{
-			LayoutedHeight = Style.FontSize + Style.PaddingTop + Style.PaddingBottom;
+			for (int i = 0; i < level * 2; i++) buf.Append(" ");
+			buf.Append(Value);
+			buf.Append("\n");
 		}
 
-        public override void DumpToBuf(StringBuilder buf, int level)
-        {
-            for (int i = 0; i < level * 2; i++) buf.Append(" ");
-            buf.Append(Value);
-            buf.Append("\n");
-        }
+    }
+
+	// 行末での分解後の文字列
+	public partial class TextFragment : Element
+	{
+		public string Value;
+		public Element StyleElement;
+
+		public TextFragment() : base()
+		{
+			LayoutType = LayoutType.Text;
+		}
+
+		public override void CalculateBlockHeight()
+		{
+			var lineHeight = StyleElement.ActualLineHeight ();
+			if (lineHeight == Style.Nothing) {
+				LayoutedHeight = (int)(StyleElement.ActualFontSize () * 1.5f);
+				//LayoutedHeight = StyleElement.ActualFontSize ();
+			} else {
+				LayoutedHeight = lineHeight;
+			}
+		}
 
 		public override void DumpToHtmlBuf(StringBuilder buf, int level)
 		{
 			buf.Append(' ', level * 2);
 			buf.Append (string.Format (
-				"<div id='{0}' class='def' style='outline: solid black 1px; left:{1}px; top:{2}px; width:{3}px; height:{4}px; font-size: {5}px;'><div class='inner'>\n",
+				"<div id='{0}' class='def' style='outline: solid gray 1px; left:{1}px; top:{2}px; width:{3}px; height:{4}px; font-size: {5}px;'><div class='inner'>\n",
 				Id,
 				LayoutedX,
 				LayoutedY,
 				LayoutedWidth,
 				LayoutedHeight,
-				Style.FontSize
+				StyleElement.ActualFontSize()
 			));
+			if (StyleElement.Tag == "a") {
+				buf.Append (string.Format ("<a href='{0}'>", ((A)StyleElement).Href));
+			}
 			buf.Append (Value);
+			if (StyleElement.Tag == "a") {
+				buf.Append ("</a>");
+			}
 			buf.Append(' ', level * 2);
 			buf.Append("</div></div>\n");
 		}
 
-    }
+	}
 }

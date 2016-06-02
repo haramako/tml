@@ -1,5 +1,6 @@
 ﻿using NUnit.Framework;
 using System;
+using System.Xml;
 
 namespace Tml
 {
@@ -12,6 +13,38 @@ namespace Tml
 		public void SetUp(){
 			Tml.Logger.Enable = true;
 			styleSheet_ = new StyleSheet ();
+		}
+
+		[Test]
+		public void ParseEmptyTagTest()
+		{
+			string src = @"a<div><img id='a'/></div>b";
+			var root = Parser.Default.Parse(src);
+			Assert.AreEqual(0, root.FindById ("a").Children.Count);
+		}
+
+		[Test]
+		public void ParseErrorTest()
+		{
+			Assert.Throws<XmlException> (() => {
+				Parser.Default.Parse("<>");
+			});
+		}
+
+		[Test]
+		public void ParseErrorTest3()
+		{
+			Assert.Throws<XmlException> (() => {
+				Parser.Default.Parse("<div>");
+			});
+		}
+
+		[Test]
+		public void ParseErrorTest2()
+		{
+			Assert.Throws<Tml.ParserException> (() => {
+				Parser.Default.Parse("fuga<hoge></hoge>");
+			});
 		}
 
 		[Test]
@@ -39,9 +72,9 @@ namespace Tml
 			var p2 = root.FindById ("p2");
 			Logger.Log (p1.Id);
 			Assert.AreEqual(95, p1.LayoutedWidth);
-			Assert.AreEqual(10, p1.LayoutedHeight);
-			Assert.AreEqual(10, p2.LayoutedHeight);
-			Assert.AreEqual (34, root.LayoutedHeight);
+			Assert.AreEqual(15, p1.LayoutedHeight);
+			Assert.AreEqual(15, p2.LayoutedHeight);
+			Assert.AreEqual (44, root.LayoutedHeight);
 			//Assert.AreEqual(element, null);
 		}
 
@@ -73,54 +106,126 @@ namespace Tml
 		}
 
 		[Test]
-		public void ReflowInlineTest1()
+		public void ParseWithStyleTag2()
 		{
-			string src = @"hogefugapiyo";
-			var root = Parser.Default.Parse(src);
-			root.LayoutedWidth = root.Width = 40;
-			var layouter = new Layouter (root);
-			layouter.Reflow();
-			Assert.AreEqual (3, root.Fragments.Count); // hoge / fuga / p / iyo
+			string src = @"<style>div { margin-top: 10; }</style><div>hoge</div>";
+			Parser.Default.Parse (src);
 		}
 
 		[Test]
-		public void ReflowInlineTest2()
+		public void ParseWithStyleTag3()
 		{
-			string src = @"hoge<span>fugap</span>iyo";
-			var root = Parser.Default.Parse(src);
-			root.LayoutedWidth = root.Width = 40;
-			var layouter = new Layouter (root);
-			layouter.Reflow();
-			Assert.AreEqual (4, root.Fragments.Count); // hoge / fuga / p / iyo
+			string src = @"<style>div { margin-top: 10; }</style><h1><div></div></h1>";
+			Parser.Default.Parse (src);
 		}
-
-	}
+			}
 
 	[TestFixture]
-	public class StyleParserTest {
-
+	public class LayouterTest {
 		[SetUp]
 		public void SetUp(){
 			Tml.Logger.Enable = true;
 		}
 
+		public Document parseAndLayout(string str, int width = 40){
+			var root = Parser.Default.Parse(str);
+			root.LayoutedWidth = root.Width = width;
+			var layouter = new Layouter (root);
+			layouter.Reflow();
+			return root;
+		}
+
+		[Test]
+		public void ReflowInlineTest1()
+		{
+			var root = parseAndLayout ("hogefugapiyo");
+			Assert.AreEqual (3, root.Fragments.Count); // hoge / fuga / p iyo
+		}
+
+		[Test]
+		public void ReflowInlineTest2()
+		{
+			var root = parseAndLayout("hoge<span>fugap</span>iyo");
+			Assert.AreEqual (4, root.Fragments.Count); // hoge / fuga / p / iyo
+		}
+
+		[Test]
+		public void ReflowInlineBlockTest1()
+		{
+			var root = parseAndLayout("h<img id='a' width='20' height='20'/>oge");
+			var img = root.FindById ("a");
+			Assert.AreEqual (10, img.LayoutedX);
+			Assert.AreEqual (0, img.LayoutedY);
+		}
+
+		[Test]
+		public void ReflowTextAlignCenterTest()
+		{
+			var root = parseAndLayout("<style>p { text-align: 'center'; }</style><p id='a'>a</p>");
+			var e = root.FindById ("a").Fragments[0];
+			Assert.AreEqual (15, e.LayoutedX);
+		}
+
+		[Test]
+		public void ReflowTextAlignRightTest()
+		{
+			var root = parseAndLayout("<style>p { text-align: 'right'; }</style><p id='a'>a</p>");
+			var e = root.FindById ("a").Fragments[0];
+			Assert.AreEqual (30, e.LayoutedX);
+		}
+	}
+
+	[TestFixture]
+	public class StyleParserTest {
+
+		StyleParser parser;
+
+		[SetUp]
+		public void SetUp(){
+			Tml.Logger.Enable = true;
+			parser = new StyleParser ();
+		}
+
+		public StyleSheet parseSheet(string src){
+			var sheet = new StyleSheet ();
+			parser.ParseStyleSheet (sheet, src);
+			return sheet;
+		}
+
 		[Test]
 		public void ParseStyleTest(){
-			var parser = new StyleParser ();
 			var style = parser.ParseStyle ("margin-left: 10; margin-right: 20;");
 			Assert.AreEqual (10, style.MarginLeft);
 			Assert.AreEqual (20, style.MarginRight);
 		}
 
 		[Test]
+		public void ParseStringPropertyTest(){
+			var style = parser.ParseStyle ("background-image: 'bg';");
+			Assert.AreEqual ("bg", style.BackgroundImage);
+		}
+
+		[Test]
+		public void BlockCommentTestTest(){
+			var sheet = parseSheet ("/* */ p { margin-left: /** * /*/10; }/* */");
+			var style = sheet.GetStyle ("p");
+			Assert.AreEqual (10, style.MarginLeft);
+		}
+
+		[Test]
+		public void LineCommentTestTest(){
+			var sheet = parseSheet ("//hogehoge \n p { margin-left: // //\n10; }//\n");
+			var style = sheet.GetStyle ("p");
+			Assert.AreEqual (10, style.MarginLeft);
+		}
+
+		[Test]
 		public void ParseStyleSheetTest(){
-			var parser = new StyleParser ();
-			var sheet = new StyleSheet ();
-			parser.ParseStyleSheet (sheet, "p { margin-left: 10; margin-right: 20; }");
+			var sheet = parseSheet("p { margin-left: 10; margin-right: 20; }");
 			var style = sheet.GetStyle ("p");
 			Assert.AreEqual (10, style.MarginLeft);
 			Assert.AreEqual (20, style.MarginRight);
-			Assert.AreEqual (10, style.FontSize);
+			Assert.AreEqual (Style.Inherit, style.FontSize);
 		}
 
 

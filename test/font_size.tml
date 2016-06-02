@@ -1,0 +1,15 @@
+<style>
+large {
+  font-scale: 150;
+}
+
+h1 {
+  font-size: 18;
+  line-height: 32;
+}
+</style>
+<h1>style test</h1>
+
+<div class="bg">
+  hogee<span class="large">fuga</span>piyo
+</div>

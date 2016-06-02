@@ -40,7 +40,9 @@ namespace Tml
 
 	public class Style
 	{
-		const int Nothing = -9999;
+		public const int Nothing = -9999;
+		public const int Inherit = -9998;
+		public static int DefaultFontSize = 10;
 
 		public int MarginLeft;
 		public int MarginRight;
@@ -53,6 +55,13 @@ namespace Tml
 		public int PaddingBottom;
 
 		public int FontSize;
+		public int FontScale;
+		public string TextDecoration;
+		public string Color;
+		public int LineHeight;
+		public string TextAlign;
+
+		public string BackgroundImage;
 
 		public void Merge(Style over){
 			if (over.MarginLeft != Nothing) MarginLeft = over.MarginLeft;
@@ -64,6 +73,12 @@ namespace Tml
 			if (over.PaddingTop != Nothing) PaddingTop = over.PaddingTop;
 			if (over.PaddingBottom != Nothing) PaddingBottom = over.PaddingBottom;
 			if (over.FontSize != Nothing) FontSize = over.FontSize;
+			if (over.FontScale != Nothing) FontScale = over.FontScale;
+			if (over.TextDecoration != null) TextDecoration = over.TextDecoration;
+			if (over.Color != null) Color = over.Color;
+			if (over.LineHeight != Nothing) LineHeight = over.LineHeight;
+			if (over.TextAlign != null) TextAlign = over.TextAlign;
+			if (over.BackgroundImage != null) BackgroundImage = over.BackgroundImage;
 		}
 
 		public void Seal(){
@@ -75,7 +90,13 @@ namespace Tml
 			if (PaddingRight == Nothing) PaddingRight = 0;
 			if (PaddingTop == Nothing) PaddingTop = 0;
 			if (PaddingBottom == Nothing) PaddingBottom = 0;
-			if (FontSize == Nothing) FontSize = 10;
+			if (FontSize == Nothing) FontSize = Inherit;
+			if (FontScale == Nothing) FontScale = 100;
+			if (TextDecoration == null)	TextDecoration = "";
+			if (Color == null) Color = "";
+			if (LineHeight == Nothing) LineHeight = Inherit;
+			if (TextAlign == null) TextAlign = "";
+			if (BackgroundImage == null) BackgroundImage = "";
 		}
 
 		public static Style Empty(){
@@ -89,24 +110,12 @@ namespace Tml
 				PaddingTop = Nothing,
 				PaddingBottom = Nothing,
 				FontSize = Nothing,
-			};
-		}
-
-		public static Style None(){
-			return new Style ();
-		}
-
-		public static Style Default(){
-			return new Style {
-				MarginLeft = 10,
-				MarginRight = 10,
-				MarginTop = 10,
-				MarginBottom = 10,
-				PaddingLeft = 5,
-				PaddingRight = 5,
-				PaddingTop = 5,
-				PaddingBottom = 5,
-				FontSize = 10,
+				FontScale = Nothing,
+				TextDecoration = null,
+				Color = null,
+				LineHeight = Nothing,
+				TextAlign = "",
+				BackgroundImage = null,
 			};
 		}
 	}
