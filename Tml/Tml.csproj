@@ -67,6 +67,7 @@
     <Compile Include="Tml\Layouter.cs" />
     <Compile Include="Tml\Element.cs" />
     <Compile Include="Tml\StyleParser.cs" />
+    <Compile Include="Tml\Autogen.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />

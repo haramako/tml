@@ -1,26 +1,21 @@
 <style>
 document {
-  padding-left: 30;
-  padding-right: 30;
-  padding-top: 20;
-  padding-bottom: 20;
-  background-image: "frame_armament";
+  padding: 20 30;
+  background-image: frame_armament;
 }
 
 a {
-  color: "#8888FF";
-  text-decoration: "underline";
+  color: #8888FF;
+  text-decoration: underline;
 }
 
 h1 {
   font-size: 32;
   line-height: 40;
   background-image: "heading_base";
-  padding-top: 5;
-  padding-bottom: 5;
-  margin-top: 20;
-  margin-bottom: 20;
-  text-align: "center";
+  padding: 5 0;
+  margin: 20 0;
+  text-align: center;
 }
 
 p {
@@ -34,12 +29,12 @@ box {
   background-image: "button_item";
 }
 
-lg {
+large {
   font-size: 48;
 }
 
 red {
-  color: "#FF4400";
+  color: #FF4400;
 }
 
 </style>

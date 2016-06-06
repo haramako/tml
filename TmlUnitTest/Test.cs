@@ -161,7 +161,7 @@ namespace Tml
 		[Test]
 		public void ReflowTextAlignCenterTest()
 		{
-			var root = parseAndLayout("<style>p { text-align: 'center'; }</style><p id='a'>a</p>");
+			var root = parseAndLayout("<style>p { text-align: center; }</style><p id='a'>a</p>");
 			var e = root.FindById ("a").Fragments[0];
 			Assert.AreEqual (15, e.LayoutedX);
 		}
@@ -169,10 +169,21 @@ namespace Tml
 		[Test]
 		public void ReflowTextAlignRightTest()
 		{
-			var root = parseAndLayout("<style>p { text-align: 'right'; }</style><p id='a'>a</p>");
+			var root = parseAndLayout("<style>p { text-align: right; }</style><p id='a'>a</p>");
 			var e = root.FindById ("a").Fragments[0];
 			Assert.AreEqual (30, e.LayoutedX);
 		}
+
+		[Test]
+		public void LineHeightTest()
+		{
+			var root = parseAndLayout("<style>p { line-scale: 3.0; } c { font-size: 20; }</style><p id='a'>a<span>b</span><span class='c'>c</span></p>");
+			var e = root.FindById ("a");
+			Assert.AreEqual (30, e.Fragments [0].LayoutedHeight);
+			Assert.AreEqual (30, e.Fragments [1].LayoutedHeight);
+			//Assert.AreEqual (60, e.Fragments [2].LayoutedHeight); // TODO: 文字サイズの子孫影響を整理する
+		}
+
 	}
 
 	[TestFixture]
@@ -200,9 +211,39 @@ namespace Tml
 		}
 
 		[Test]
+		public void ParseMargin1Test(){
+			var style = parser.ParseStyle ("margin: 10;");
+			Assert.AreEqual (10, style.MarginLeft);
+			Assert.AreEqual (10, style.MarginRight);
+			Assert.AreEqual (10, style.MarginTop);
+			Assert.AreEqual (10, style.MarginBottom);
+		}
+
+		[Test]
+		public void ParseMargin2Test(){
+			var style = parser.ParseStyle ("margin: 10 20;");
+			Assert.AreEqual (10, style.MarginTop);
+			Assert.AreEqual (10, style.MarginBottom);
+			Assert.AreEqual (20, style.MarginLeft);
+			Assert.AreEqual (20, style.MarginRight);
+		}
+
+		[Test]
 		public void ParseStringPropertyTest(){
 			var style = parser.ParseStyle ("background-image: 'bg';");
 			Assert.AreEqual ("bg", style.BackgroundImage);
+		}
+
+		[Test]
+		public void ParseColorPropertyTest(){
+			var style = parser.ParseStyle ("background-color: #09afAF;");
+			Assert.AreEqual ("#09afAF", style.BackgroundColor);
+		}
+
+		[Test]
+		public void ParseIdentifierPropertyTest(){
+			var style = parser.ParseStyle ("background-color: white;");
+			Assert.AreEqual ("white", style.BackgroundColor);
 		}
 
 		[Test]

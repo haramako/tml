@@ -14,11 +14,27 @@ public static class StringBuilderExtension {
 
 namespace Tml
 {
-	public class StyleParser {
+	public partial class StyleParser {
 		StreamReader r_;
 		StringBuilder sb_ = new StringBuilder();
 		StyleSheet currentSheet_;
 		Style currentStyle_;
+		TokenType tokenType_;
+		string tokenString_;
+		string[] values_ = new string[8];
+
+		[Flags]
+		enum CharType {
+			None = 0,
+			Alphabet = 1,
+			Separator = 2,
+			Number = 4,
+			Ident = 8,
+			Symbol = 16,
+			Quote = 32,
+			Space = 64,
+			Hex = 256,
+		}
 
 		public StyleParser() {
 		}
@@ -73,6 +89,7 @@ namespace Tml
 			}
 		}
 
+		int valueCount_;
 		void parseElement(){
 			expect (TokenType.Identifier);
 			var key = tokenString_;
@@ -81,79 +98,82 @@ namespace Tml
 			expect (TokenType.Symbol, ":");
 			nextToken ();
 
-			switch (tokenType_) {
-			case TokenType.Number:
-				setNumberElement (key, tokenNumber_);
-				break;
-			case TokenType.String:
-				setStringElement (key, tokenString_);
-				break;
-			default:
-				throw new Exception ("expect token some value but " + tokenType_);
+			bool finished = false;
+			valueCount_ = 0;
+			while (!finished) {
+				switch (tokenType_) {
+				case TokenType.Number:
+				case TokenType.Identifier:
+				case TokenType.String:
+				case TokenType.Color:
+					values_ [valueCount_] = tokenString_;
+					valueCount_++;
+					nextToken ();
+					break;
+				default:
+					finished = true;
+					break;
+				}
 			}
-			nextToken ();
+
+			if (valueCount_ == 0) {
+				throw new Exception ("not value specified");
+			}
+			setField (key);
 
 			expect (TokenType.Symbol, ";");
 			nextToken ();
 		}
 
-		void setStringElement(string key, string value){
+		void setField(string key){
 			switch (key) {
-			case "background-image":
-				currentStyle_.BackgroundImage = value;
+			case "margin":
+				if (valueCount_ == 1) {
+					currentStyle_.SetField ("margin-left", values_ [0]);
+					currentStyle_.SetField ("margin-right", values_ [0]);
+					currentStyle_.SetField ("margin-top", values_ [0]);
+					currentStyle_.SetField ("margin-bottom", values_ [0]);
+				} else if (valueCount_ == 2) {
+					currentStyle_.SetField ("margin-top", values_ [0]);
+					currentStyle_.SetField ("margin-bottom", values_ [0]);
+					currentStyle_.SetField ("margin-left", values_ [1]);
+					currentStyle_.SetField ("margin-right", values_ [1]);
+				} else if (valueCount_ == 4) {
+					currentStyle_.SetField ("margin-top", values_ [0]);
+					currentStyle_.SetField ("margin-right", values_ [1]);
+					currentStyle_.SetField ("margin-bottom", values_ [2]);
+					currentStyle_.SetField ("margin-left", values_ [3]);
+				} else {
+					throw new Exception ("invalid value count");
+				}
 				break;
-			case "text-decoration":
-				currentStyle_.TextDecoration = value;
-				break;
-			case "color":
-				currentStyle_.Color = value;
-				break;
-			case "text-align":
-				currentStyle_.TextAlign = value;
-				break;
-			default:
-				Logger.Log ("invalid key '" + key + "'");
-				break;
-			}
-		}
 
-		void setNumberElement(string key, int value){
-			switch (key) {
-			case "margin-left":
-				currentStyle_.MarginLeft = value;
-				break;
-			case "margin-right":
-				currentStyle_.MarginRight = value;
-				break;
-			case "margin-top":
-				currentStyle_.MarginTop = value;
-				break;
-			case "margin-bottom":
-				currentStyle_.MarginBottom = value;
-				break;
-			case "padding-left":
-				currentStyle_.PaddingLeft = value;
-				break;
-			case "padding-right":
-				currentStyle_.PaddingRight = value;
-				break;
-			case "padding-top":
-				currentStyle_.PaddingTop = value;
-				break;
-			case "padding-bottom":
-				currentStyle_.PaddingBottom = value;
-				break;
-			case "font-size":
-				currentStyle_.FontSize = value;
-				break;
-			case "font-scale":
-				currentStyle_.FontScale = value;
-				break;
-			case "line-height":
-				currentStyle_.LineHeight = value;
+			case "padding":
+				if (valueCount_ == 1) {
+					currentStyle_.SetField ("padding-left", values_ [0]);
+					currentStyle_.SetField ("padding-right", values_ [0]);
+					currentStyle_.SetField ("padding-top", values_ [0]);
+					currentStyle_.SetField ("padding-bottom", values_ [0]);
+				} else if (valueCount_ == 2) {
+					currentStyle_.SetField ("padding-top", values_ [0]);
+					currentStyle_.SetField ("padding-bottom", values_ [0]);
+					currentStyle_.SetField ("padding-left", values_ [1]);
+					currentStyle_.SetField ("padding-right", values_ [1]);
+				} else if (valueCount_ == 4) {
+					currentStyle_.SetField ("padding-top", values_ [0]);
+					currentStyle_.SetField ("padding-right", values_ [1]);
+					currentStyle_.SetField ("padding-bottom", values_ [2]);
+					currentStyle_.SetField ("padding-left", values_ [3]);
+				} else {
+					throw new Exception ("invalid value count");
+				}
 				break;
 			default:
-				Logger.Log ("invalid key '" + key + "'");
+				if (valueCount_ == 1) {
+					currentStyle_.SetField (key, values_ [0]);
+				} else {
+					throw new Exception ("too many values for " + key);
+				}
 				break;
 			}
 		}
@@ -169,11 +189,8 @@ namespace Tml
 			Number,
 			String,
 			Symbol,
+			Color,
 		}
-
-		TokenType tokenType_;
-		string tokenString_;
-		int tokenNumber_;
 
 		void expect(TokenType tt, string tokenString = null ){
 			if (tokenType_ != tt) {
@@ -226,11 +243,11 @@ namespace Tml
 				}
 			} else if (isNumericChar (c)) {
 				// 数字
-				while (isNumericChar (r_.Peek ())) {
+				while (isNumericChar (r_.Peek ()) || r_.Peek () == '.') {
 					sb_.Append ((char)r_.Read ());
 				}
 				tokenType_ = TokenType.Number;
-				tokenNumber_ = int.Parse (sb_.ToString ());
+				tokenString_ = sb_.ToString ();
 				sb_.Clear ();
 			} else if (isIdentChar (c)) {
 				// 識別子
@@ -242,8 +259,22 @@ namespace Tml
 				sb_.Clear ();
 			} else if (isSymbolChar (c)) {
 				// 記号
-				tokenString_ = ((char)r_.Read ()).ToString ();
-				tokenType_ = TokenType.Symbol;
+				switch (c) {
+				case '#':
+					r_.Read ();
+					sb_.Append ((char)c);
+					while (isHexChar(r_.Peek())){
+						sb_.Append ((char)r_.Read ());
+					}
+					tokenString_ = sb_.ToString ();
+					tokenType_ = TokenType.Color;
+					sb_.Clear ();
+					break;
+				default:
+					tokenString_ = ((char)r_.Read ()).ToString ();
+					tokenType_ = TokenType.Symbol;
+					break;
+				}
 			} else if (isQuoteChar (c)) {
 				// 文字列
 				r_.Read ();
@@ -261,24 +292,36 @@ namespace Tml
 			}
 		}
 
+		CharType charType(int c){
+			if (c >= 0 && (c < 128)) {
+				return CharTable [c];
+			} else {
+				return CharType.None;
+			}
+		}
+
 		bool isIdentChar(int c){
-			return ( c >= 'a' && c <= 'z' ) || (c  >= 'A' && c <= 'Z' ) || (c == '-' ) || (c == '_' ) || isNumericChar(c);
+			return c >= 0 && (c > 128 || (CharTable [c] & (CharType.Alphabet | CharType.Separator | CharType.Number)) != 0);
 		}
 
 		bool isNumericChar(int c){
-			return (c >= '0' && c <= '9');
+			return (charType(c) & (CharType.Number)) != 0;
+		}
+
+		bool isHexChar(int c){
+			return (charType(c) & (CharType.Hex)) != 0;
 		}
 
 		bool isSymbolChar(int c){
-			return c == ':' || c == '}' || c == '{' || c == ';';
+			return (charType(c) & (CharType.Symbol)) != 0;
 		}
 
 		bool isQuoteChar(int c){
-			return c == '"' || c == '\'';
+			return (charType(c) & (CharType.Quote)) != 0;
 		}
 
 		bool isSpaceChar(int c){
-			return c == ' ' || c == '\t' || c == '\n' || c == '\r';
+			return (charType(c) & (CharType.Space)) != 0;
 		}
 
 		string build(){

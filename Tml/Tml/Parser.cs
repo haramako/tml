@@ -7,13 +7,14 @@ using System.Xml;
 
 // TODO: &nbsp; などのエンティティに対応
 // TODO: エラーに寛容に
-// TODO: margin: 10 20   margin: 10 などの短絡表記に対応
-// TODO: align: center or left or right
 // TODO: styleのwidth,height
 // TODO: float: left or right
 // TODO: background-repeat: simple slice tile
-// TODO: background-color:
+// TODO: background-color: NGUI
 // TODO: 複数classに対応
+// TODO: Styleクラス継承
+// TODO: タグ定義
+// TODO: inline style
 
 namespace Tml
 {
@@ -103,6 +104,7 @@ namespace Tml
 
 			Document root = new Document();
 			root.Tag = "document";
+			root.SetClass ("");
 			Stack<Element> stack = new Stack<Element>();
 			stack.Push(root);
 
@@ -136,6 +138,7 @@ namespace Tml
 
 							stack.Peek ().Children.Add (element);
 							element.Tag = reader_.Name;
+							element.SetClass("");
 							element.Parent = stack.Peek ();
 							stack.Push (element);
 							element.Parse (this, reader_);

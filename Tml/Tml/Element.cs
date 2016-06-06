@@ -63,9 +63,12 @@ namespace Tml
 
     public partial class Element
     {
+		static readonly char[] ClassSeprators = new char[]{' ', '\t', '\n'};
+
 		public string Tag;
         public string Id;
         public string Class;
+		public string[] Classes = new string[0];
         public int X;
         public int Y;
         public int Width;
@@ -116,8 +119,8 @@ namespace Tml
                 case "id":
                     Id = value;
                     break;
-                case "class":
-                    Class = value;
+				case "class":
+					SetClass (value);
                     break;
                 case "x":
                     X = int.Parse(value);
@@ -137,12 +140,17 @@ namespace Tml
             }
         }
 
+		public void SetClass(string value){
+			Class = value;
+			Classes = (Tag+" "+value).Trim ().Split (ClassSeprators, StringSplitOptions.RemoveEmptyEntries);
+		}
+
 		//==========================================================
 		// スタイル適用
 		//==========================================================
 
 		public void ApplyStyle(StyleSheet styleSheet){
-			Style = styleSheet.GetStyle (Tag, Class);
+			Style = styleSheet.GetStyle (Classes);
 			for (int i = 0; i < Children.Count; i++) {
 				Children [i].ApplyStyle (styleSheet);
 			}
@@ -164,9 +172,19 @@ namespace Tml
 			if (Style.FontSize != Style.Inherit) {
 				return Style.FontSize;
 			} else if (Parent != null) {
-				return Parent.ActualFontSize () * Style.FontScale / 100;
+				return (int)(Parent.ActualFontSize () * Style.FontScale);
 			} else {
 				return Style.DefaultFontSize;
+			}
+		}
+
+		public float ActualLineScale(){
+			if (Style.LineScale != Style.InheritFloat) {
+				return Style.LineScale;
+			} else if (Parent != null) {
+				return Parent.ActualLineScale ();
+			} else {
+				return Style.DefaultLineScale;
 			}
 		}
 
@@ -174,9 +192,21 @@ namespace Tml
 			if (Style.LineHeight != Style.Inherit) {
 				return Style.LineHeight;
 			} else if (Parent != null) {
-				return Parent.ActualLineHeight();
+				return Parent.ActualLineHeight ();
 			} else {
-				return Style.Nothing;
+				return Style.Nothing; //Style.DefaultLineHeight;
+			}
+		}
+
+		public int ActualComputedLineHeight(){
+			if (Style.LineHeight != Style.Inherit) {
+				return Style.LineHeight;
+			} else if( Style.LineScale != Style.InheritFloat ){
+				return (int)(ActualFontSize () * Style.LineScale);
+			} else if (Parent != null) {
+				return Parent.ActualComputedLineHeight ();
+			} else {
+				return (int)(Style.DefaultFontSize * Style.DefaultLineScale);
 			}
 		}
 
@@ -217,13 +247,14 @@ namespace Tml
 				bgStyle = string.Format ("background-image: url({0}.png); background-size: 100% 100%;", Style.BackgroundImage);
 			}
 			buf.Append (string.Format (
-				"<div id='{0}' class='def' style='outline: solid gray 1px; left:{1}px; top:{2}px; width:{3}px; height:{4}px; {5}'><div class='inner'>\n",
+				"<div id='{0}' class='def' style='outline: solid gray 1px; left:{1}px; top:{2}px; width:{3}px; height:{4}px; {5}; background-color: {6};'><div class='inner'>\n",
 				Id,
 				LayoutedX,
 				LayoutedY,
 				LayoutedWidth,
 				LayoutedHeight,
-				bgStyle
+				bgStyle,
+				Style.BackgroundColor
 			));
 			foreach (var e in Fragments)
 			{
@@ -305,13 +336,14 @@ namespace Tml
 		{
 			buf.Append(' ', level * 2);
 			buf.Append (string.Format (
-				"<img id='{0}' class='def' style='outline: solid gray 1px; left:{1}px; top:{2}px; width:{3}px; height:{4}px;' src='{5}'>\n",
+				"<img id='{0}' class='def' style='outline: solid gray 1px; left:{1}px; top:{2}px; width:{3}px; height:{4}px; background-color: {6}' src='{5}'>\n",
 				Id,
 				LayoutedX,
 				LayoutedY,
 				LayoutedWidth,
 				LayoutedHeight,
-				Src
+				Src,
+				Style.BackgroundColor
 			));
 			buf.Append(' ', level * 2);
 			buf.Append("</div>\n");
@@ -349,7 +381,7 @@ namespace Tml
 
 		public override void CalculateBlockHeight()
 		{
-			var lineHeight = StyleElement.ActualLineHeight ();
+			var lineHeight = StyleElement.ActualComputedLineHeight ();
 			if (lineHeight == Style.Nothing) {
 				LayoutedHeight = (int)(StyleElement.ActualFontSize () * 1.5f);
 				//LayoutedHeight = StyleElement.ActualFontSize ();
@@ -362,16 +394,17 @@ namespace Tml
 		{
 			buf.Append(' ', level * 2);
 			buf.Append (string.Format (
-				"<div id='{0}' class='def' style='outline: solid gray 1px; left:{1}px; top:{2}px; width:{3}px; height:{4}px; font-size: {5}px;'><div class='inner'>\n",
+				"<div id='{0}' class='def' style='outline: solid gray 1px; left:{1}px; top:{2}px; width:{3}px; height:{4}px; font-size: {5}px; background-color: {6}'><div class='inner'>\n",
 				Id,
 				LayoutedX,
 				LayoutedY,
 				LayoutedWidth,
 				LayoutedHeight,
-				StyleElement.ActualFontSize()
+				StyleElement.ActualFontSize(),
+				StyleElement.Style.BackgroundColor
 			));
 			if (StyleElement.Tag == "a") {
-				buf.Append (string.Format ("<a href='{0}'>", ((A)StyleElement).Href));
+				buf.Append (string.Format ("<a href='{0}.html'>", ((A)StyleElement).Href));
 			}
 			buf.Append (Value);
 			if (StyleElement.Tag == "a") {
