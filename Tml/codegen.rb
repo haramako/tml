@@ -63,6 +63,22 @@ namespace Tml {
         };
     }
 }
+
+#if !USE_SYSTEM_XML
+namespace Tml.XmlPolyfill {
+    public partial class XmlReader : IXmlLineInfo {
+        static CharType[] CharTable = {
+        <%- xml_char_types.each.with_index do |c,i| -%>
+        <%- if c.size > 0 -%>
+            <%= c.uniq.map{|t| 'CharType.'+t.to_s.capitalize }.join(' | ') %>, // <%= i.chr.inspect %>
+        <%- else -%>
+            CharType.None,
+        <%- end -%>
+        <%- end -%>
+        };
+    }
+}
+#endif
 EOT
 
 class StyleField
@@ -144,6 +160,7 @@ class StyleField
 end
 
 char_types = $char_types = Array.new(128){[]}
+xml_char_types = $xml_char_types = Array.new(128){[]}
 style_fields = $style_fields = []
 
 def style_field( type, name, opt = {})
@@ -158,6 +175,23 @@ def char_type(type, *chars)
     end
   end
 end
+
+def xml_char_type(type, *chars)
+  chars.each do |cs|
+    cs = cs.each_char if cs.is_a? String
+    cs.each do |c|
+      $xml_char_types[c.ord] << type
+    end
+  end
+end
+
+xml_char_type :alphabet, 'a'..'z', 'A'..'Z'
+xml_char_type :number, '0'..'9'
+xml_char_type :separator, '_-'
+xml_char_type :open, '<'
+xml_char_type :close, '/>'
+xml_char_type :space, "\n\r\t "
+xml_char_type :quote, '"', "'"
 
 char_type :alphabet, 'a'..'z', 'A'..'Z'
 char_type :number, '0'..'9'

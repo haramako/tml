@@ -1,6 +1,10 @@
 ﻿using NUnit.Framework;
 using System;
+#if USE_SYSTEM_XML
 using System.Xml;
+#else
+using Tml.XmlPolyfill;
+#endif
 
 namespace Tml
 {

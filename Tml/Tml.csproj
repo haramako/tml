@@ -68,6 +68,8 @@
     <Compile Include="Tml\Element.cs" />
     <Compile Include="Tml\StyleParser.cs" />
     <Compile Include="Tml\Autogen.cs" />
+    <Compile Include="Tml\XmlPolyfill.cs" />
+    <Compile Include="Tml\UnityPolyfill.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
