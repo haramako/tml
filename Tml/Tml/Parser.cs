@@ -68,6 +68,7 @@ namespace Tml
 			AddTag ("span", typeof(InlineElement));
 			AddTag ("img", typeof(Img));
 			AddTag ("a", typeof(A));
+			AddTag("template", typeof(TemplateElement));
 		}
 
 		public void AddTag(string tag, Type type)
@@ -171,6 +172,7 @@ namespace Tml
 			// Logger.Log(root.Dump());
 
 			root.ApplyStyle (root.StyleSheet);
+			root.CollectTemplate(null);
 
 			return root;
 		}

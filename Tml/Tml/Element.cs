@@ -28,6 +28,7 @@ namespace Tml
         Inline,
 		InlineBlock,
 		Text,
+		Template,
     }
 
     public enum PositionType
@@ -47,7 +48,9 @@ namespace Tml
         public int X;
         public int Y;
         public int Width;
-        public int Height;
+		public int Height;
+		public string TemplateName;
+		public string Var;
 
         public Element Parent;
         public List<Element> Children = new List<Element>();
@@ -89,36 +92,96 @@ namespace Tml
 
         public virtual void ParseAttribute(string name, string value)
         {
-            switch (name)
-            {
-                case "id":
-                    Id = value;
-                    break;
-				case "class":
-					SetClass (value);
-                    break;
-                case "x":
-                    X = int.Parse(value);
-                    break;
-                case "y":
-                    Y = int.Parse(value);
-                    break;
-                case "width":
-                    Width = int.Parse(value);
-                    break;
-                case "height":
-                    Height = int.Parse(value);
-                    break;
-                default:
-                    Logger.Log("unknown attribute " + name + "=" + value);
-                    break;
-            }
+			switch (name) {
+			case "id":
+				Id = value;
+				break;
+			case "class":
+				SetClass(value);
+				break;
+			case "x":
+				X = int.Parse(value);
+				break;
+			case "y":
+				Y = int.Parse(value);
+				break;
+			case "width":
+				Width = int.Parse(value);
+				break;
+			case "height":
+				Height = int.Parse(value);
+				break;
+			case "template":
+				TemplateName = value;
+				break;
+			case "var":
+				Var = value;
+				break;
+			default:
+				Logger.Log("unknown attribute " + name + "=" + value);
+				break;
+			}
         }
 
 		public void SetClass(string value){
 			Class = value;
 			Classes = (Tag+" "+value).Trim ().Split (ClassSeprators, StringSplitOptions.RemoveEmptyEntries);
 		}
+
+		//==========================================================
+		// テンプレート
+		//==========================================================
+
+		/// <summary>
+		/// テンプレートを収集する
+		/// </summary>
+		/// <param name="e">E.</param>
+		public void CollectTemplate(Element currentTemplate)
+		{
+			// root要素は、かならずテンプレートになる
+			if (currentTemplate != null && TemplateName != null) {
+				currentTemplate.addTemplateVar(TemplateName, this);
+			}
+			if (currentTemplate == null || TemplateName != null ){
+				currentTemplate = this;
+				templateVariables_ = new Dictionary<string, Element>();
+			}
+			if (Var != null) {
+				currentTemplate.addTemplateVar(Var, this);
+			}
+			foreach (var child in Children) {
+				child.CollectTemplate(currentTemplate);
+			}
+		}
+
+		Dictionary<string, Element> templateVariables_;
+
+		void addTemplateVar(string varName, Element e)
+		{
+			templateVariables_[varName] = e;
+		}
+
+		public Element GetTemplateVar(string varName)
+		{
+			Element found;
+			if (templateVariables_.TryGetValue(varName, out found)) {
+				return found;
+			} else {
+				return null;
+			}
+		}
+
+		public void SetTemplateVar(string varName, string val)
+		{
+			var var = GetTemplateVar(varName);
+			if (var != null) {
+				var text = var as Text;
+				if (text != null) {
+					text.Value = val;
+				}
+			}
+		}
+
 
 		//==========================================================
 		// スタイル適用
@@ -239,6 +302,29 @@ namespace Tml
 			buf.Append("</div></div>\n");
 		}
 
+		/// <summary>
+		/// テンプレート用に複製する
+		/// </summary>
+		public virtual void CopyFrom(Element e)
+		{
+			Id = e.Id;
+			Tag = e.Tag;
+			Class = e.Class;
+			Classes = e.Classes;
+			X = e.X;
+			Y = e.Y;
+			Width = e.Width;
+			Height = e.Height;
+			Var = e.Var;
+		}
+
+		public Element Copy<T>() where T:Element, new()
+		{
+			var copy = new T();
+			copy.CopyFrom(this);
+			return copy;
+		}
+
 		public Element FindById(string id){
 			if (this.Id == id) {
 				return this;
@@ -273,6 +359,14 @@ namespace Tml
 	{
 		public InlineBlockElement(): base(){
 			LayoutType = LayoutType.InlineBlock;
+		}
+	}
+
+	public partial class TemplateElement : Element
+	{
+		public TemplateElement() : base()
+		{
+			LayoutType = LayoutType.Template;
 		}
 	}
 

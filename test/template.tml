@@ -1,0 +1,17 @@
+<h1>テンプレートテスト</h1>
+
+<component tag='rount-button'>
+  <span id='name'/>
+  <div id="@content"/>
+</component>
+
+<div id='item-list'>
+  <box scope='item'><span id='name'/>:<span id='age'/></box>
+  <round-button id="btn" name="hoge">
+    hoge
+  </round-button>
+
+  <list foreach="items">
+    <div><span id='name'/>:<span id='age'/></div>
+  </list>
+</div>
